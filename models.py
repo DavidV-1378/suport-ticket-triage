@@ -73,4 +73,12 @@ class SeveritySummary:
     count: int
     active_count: int
 
+class TicketBoard:
+    def __init__(self) -> None:
+        self._tickets: list[Ticket] = []
+        self._by_severity: dict{Severity, list[Ticket]} = {
+            severity: [] for severity in Severity
+        }
+        self._by_status: dict{TicketStatus, list[Ticket]} = {}
+
     
