@@ -135,4 +135,32 @@ class TicketBoard:
             key = lambda ticket: (-ticket.minutes_open, ticket.ticket_id)
         )
 
+class EscalationPolicy:
+    def should_escalate(self, ticket) -> bool:
+        raise NotImplementedError
+    
+class CriticalOrOldPolicy(EscalationPolicy): 
+    def __init__(self, max_minutes: int) -> None:
+        if max_minutes < 0:
+            raise ValueError("Max minutes cannot be lower than zero")
+        self._max_minutes = max_minutes
         
+    def should_escalate(self, ticket) -> bool:
+        return (
+            ticket.active
+            and (
+                ticket.severity is Severity.CRITICAL
+                or ticket.minutes_open >= self._max_minutes
+            )
+            
+        )
+    
+class TagBasedPolicy(EscalationPolicy):
+    def __init__(self, escalation_tag: set[str]) -> None:
+        self._escalation_tag = {tag.strip().lower() for tag in escalation_tag}
+
+    def should_escalate(self, ticket) -> bool:
+        return ticket.active and any(tag in self._escalation_tag for tag in ticket.tags)
+    
+
+class CompositeEscaltionPolicy(EscalationPolicy):
