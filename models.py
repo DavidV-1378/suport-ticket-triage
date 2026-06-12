@@ -6,8 +6,8 @@ from dataclasses import dataclass
 # 3. Create dataclass Ticket(ticket_id, customer, severity, status, minutes_open, tags) and validate fields, property active, class method from raw
 # Raw format: ticket_id | customer | ... | tag1, tag2
 # Create class SeveritySummary(severity, count, active_count)
-# Create class TicketBoard that stores tickets, maintains indexes by severity and status, supports len and in.
-# Exposes count, open count, averege minutes open, methods: active_tickets, tickets_with_tag, severity_summaries, sorted_by_age
+# Create class TicketBoard that stores tickets, maintains indexes by severity and status, supports len, in and iter.
+# Exposes count, open count, averege minutes open, methods: active_tickets, tickets_with_tag, severity_summaries, sorted_by_age, add_tickets.
 # Create base class escalation policy with should_escalate(ticket) -> bool:
 # Sub-classes: critical_or_old_policy, tag based policy, composit escalation policy
 # Create escalated tickets, sort by: minutes open DESC, ticket id ascending. Use a lambda function.
@@ -76,9 +76,63 @@ class SeveritySummary:
 class TicketBoard:
     def __init__(self) -> None:
         self._tickets: list[Ticket] = []
-        self._by_severity: dict{Severity, list[Ticket]} = {
+        self._by_severity: dict[Severity, list[Ticket]] = {
             severity: [] for severity in Severity
         }
-        self._by_status: dict{TicketStatus, list[Ticket]} = {}
+        self._by_status: dict[TicketStatus, list[Ticket]] = {
+            status: [] for status in TicketStatus
+        }
 
+    def __len__(self) -> int:
+        return len(self._tickets)
     
+    def __contains__(self, ticket_id: str) -> bool:
+        return any(ticket.ticket_id == ticket_id for ticket in self._tickets)
+    
+    def __iter__(self):
+        return iter(self._tickets)
+    
+    @property
+    def count(self) -> int:
+        return len(self._tickets)
+    
+    @property
+    def open_count(self) -> int:
+        return len(self._by_status[TicketStatus.OPEN])
+    
+    @property
+    def avearge_minutes_open(self) -> float:
+        if not self._tickets:
+            return 0.0
+        return sum(ticket.minutes_open for ticket in self._tickets) / len(self._tickets)
+    
+    def add(self, ticket: Ticket) -> None:
+        self._tickets.append(ticket)
+        self._by_severity[ticket.severity].append(ticket)
+        self._by_status[ticket.status].append(ticket)
+
+    def active_tickets(self) -> list[Ticket]:
+        return [ticket for ticket in self._tickets if ticket.active]
+
+    def tickets_with_tag(self, tag: str) -> list[Ticket]:
+        normalised_tag = tag.strip().lower()
+        return [ticket for ticket in self._tickets if normalised_tag in ticket.tags]
+    
+    def severity_summaries(self) -> list[SeveritySummary]:
+        return [
+            SeveritySummary(
+                severity = severity,
+                count = len(tickets),
+                active_count = len([ticket for ticket in tickets if ticket.active])
+            )
+            for severity, tickets in self._by_severity.items()
+            if tickets
+        ]
+    
+    def sorted_by_age(self) -> list[Ticket]:
+        return sorted(
+            self._tickets,
+            key = lambda ticket: (-ticket.minutes_open, ticket.ticket_id)
+        )
+
+        
