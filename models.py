@@ -164,3 +164,19 @@ class TagBasedPolicy(EscalationPolicy):
     
 
 class CompositeEscaltionPolicy(EscalationPolicy):
+    def __init__(self, escalate_policies: list[EscalationPolicy]) -> None:
+        if not escalate_policies:
+            raise ValueError("Escalte ploicies list cannot be empty")
+        self._policies = list(escalate_policies)
+    
+    def should_escalate(self, ticket) -> bool:
+        return any(policy.should_escalate(ticket) for policy in self._policies)
+    
+    def escalated_tickets(self, escaltion_policy: EscalationPolicy, ticket_board: TicketBoard) -> list[Ticket]:
+        tickets = [ticket for ticket in ticket_board if escaltion_policy.should_escalate(ticket)]
+
+        return sorted(tickets, key = lambda ticket: (-ticket.minutes_open, ticket.ticket_id))
+    
+    
+
+    
