@@ -41,11 +41,11 @@ class Ticket:
             raise ValueError("Customer cannot be empty")
         if self.minutes_open < 0:
             raise ValueError("Minutes oppen cannout be lower than zero")
-        object.__setattr__{
+        object.__setattr__(
             self,
             "tags",
             tuple(tag.strip().lower() for tag in self.tags if tag.strip()),
-        }
+        )
 
     @property
     def active(self) -> bool:
@@ -172,10 +172,10 @@ class CompositeEscaltionPolicy(EscalationPolicy):
     def should_escalate(self, ticket) -> bool:
         return any(policy.should_escalate(ticket) for policy in self._policies)
     
-    def escalated_tickets(self, escaltion_policy: EscalationPolicy, ticket_board: TicketBoard) -> list[Ticket]:
-        tickets = [ticket for ticket in ticket_board if escaltion_policy.should_escalate(ticket)]
+def escalated_tickets(escaltion_policy: EscalationPolicy, ticket_board: TicketBoard) -> list[Ticket]:
+    tickets = [ticket for ticket in ticket_board if escaltion_policy.should_escalate(ticket)]
 
-        return sorted(tickets, key = lambda ticket: (-ticket.minutes_open, ticket.ticket_id))
+    return sorted(tickets, key = lambda ticket: (-ticket.minutes_open, ticket.ticket_id))
     
     
 
